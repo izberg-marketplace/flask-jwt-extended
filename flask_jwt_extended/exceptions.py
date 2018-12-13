@@ -70,3 +70,10 @@ class UserClaimsVerificationError(JWTExtendedException):
     indicating that the expected user claims are invalid
     """
     pass
+
+
+class UserClaimsConflictingError(JWTExtendedException):
+    """
+    Error raised when the user claims are conflicting with the root claims
+    """
+    pass

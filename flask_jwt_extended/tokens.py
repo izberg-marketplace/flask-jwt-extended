@@ -6,7 +6,7 @@ from calendar import timegm
 import jwt
 from werkzeug.security import safe_str_cmp
 
-from flask_jwt_extended.exceptions import JWTDecodeError, CSRFError
+from flask_jwt_extended.exceptions import JWTDecodeError, CSRFError, UserClaimsConflictingError
 
 
 def _create_csrf_token():
@@ -69,17 +69,30 @@ def encode_access_token(identity, secret, algorithm, expires_delta, fresh,
 
     # Don't add extra data to the token if user_claims is empty.
     if user_claims:
-        token_data[user_claims_key] = user_claims
+        if not user_claims_key:
+            # insert as root
+            _raise_for_conflicting_claims(token_data, user_claims)
+            token_data.update(user_claims)
+        else:
+            token_data[user_claims_key] = user_claims
 
     if csrf:
         token_data['csrf'] = _create_csrf_token()
     return _encode_jwt(token_data, expires_delta, secret, algorithm,
-                       json_encoder=json_encoder)
+                       json_encoder=json_encoder, kid=kid)
+
+
+def _raise_for_conflicting_claims(token_data, user_claims):
+    conflicting_claims = set(token_data.keys()) & set(user_claims.keys())
+    if conflicting_claims:
+        raise UserClaimsConflictingError(
+            "Conficting user claims: {}".format(conflicting_claims)
+        )
 
 
 def encode_refresh_token(identity, secret, algorithm, expires_delta, user_claims,
                          csrf, identity_claim_key, user_claims_key,
-                         json_encoder=None):
+                         json_encoder=None, kid=None):
     """
     Creates a new encoded (utf-8) refresh token.
 
@@ -104,12 +117,17 @@ def encode_refresh_token(identity, secret, algorithm, expires_delta, user_claims
 
     # Don't add extra data to the token if user_claims is empty.
     if user_claims:
-        token_data[user_claims_key] = user_claims
+        if not user_claims_key:
+            # insert as root
+            _raise_for_conflicting_claims(token_data, user_claims)
+            token_data.update(user_claims)
+        else:
+            token_data[user_claims_key] = user_claims
 
     if csrf:
         token_data['csrf'] = _create_csrf_token()
     return _encode_jwt(token_data, expires_delta, secret, algorithm,
-                       json_encoder=json_encoder)
+                       json_encoder=json_encoder, kid=kid)
 
 
 def decode_jwt(encoded_token, secret, algorithm, identity_claim_key,

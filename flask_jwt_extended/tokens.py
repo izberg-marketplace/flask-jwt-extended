@@ -14,7 +14,7 @@ def _create_csrf_token():
 
 
 def _encode_jwt(additional_token_data, expires_delta, secret, algorithm,
-                json_encoder=None):
+                json_encoder=None, kid=None):
     uid = _create_csrf_token()
     now = datetime.datetime.utcnow()
     token_data = {
@@ -27,14 +27,19 @@ def _encode_jwt(additional_token_data, expires_delta, secret, algorithm,
     if expires_delta:
         token_data['exp'] = now + expires_delta
     token_data.update(additional_token_data)
+    if kid:
+        headers = {"kid": kid}
+    else:
+        headers = None
     encoded_token = jwt.encode(token_data, secret, algorithm,
-                               json_encoder=json_encoder).decode('utf-8')
+                               json_encoder=json_encoder,
+                               headers=headers).decode('utf-8')
     return encoded_token
 
 
 def encode_access_token(identity, secret, algorithm, expires_delta, fresh,
                         user_claims, csrf, identity_claim_key, user_claims_key,
-                        json_encoder=None):
+                        json_encoder=None, kid=None):
     """
     Creates a new encoded (utf-8) access token.
 

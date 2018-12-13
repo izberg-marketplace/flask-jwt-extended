@@ -429,16 +429,23 @@ class JWTManager(object):
         else:
             user_claims = None
 
+        secret = self._encode_key_callback(identity)
+        if isinstance(secret, tuple):
+            # kid is returned
+            secret, kid = secret
+        else:
+            kid = None
         refresh_token = encode_refresh_token(
             identity=self._user_identity_callback(identity),
-            secret=self._encode_key_callback(identity),
+            secret=secret,
             algorithm=config.algorithm,
             expires_delta=expires_delta,
             user_claims=user_claims,
             csrf=config.csrf_protect,
             identity_claim_key=config.identity_claim_key,
             user_claims_key=config.user_claims_key,
-            json_encoder=config.json_encoder
+            json_encoder=config.json_encoder,
+            kid=kid,
         )
         return refresh_token
 
@@ -446,9 +453,15 @@ class JWTManager(object):
         if expires_delta is None:
             expires_delta = config.access_expires
 
+        secret = self._encode_key_callback(identity)
+        if isinstance(secret, tuple):
+            # kid is returned
+            secret, kid = secret
+        else:
+            kid = None
         access_token = encode_access_token(
             identity=self._user_identity_callback(identity),
-            secret=self._encode_key_callback(identity),
+            secret=secret,
             algorithm=config.algorithm,
             expires_delta=expires_delta,
             fresh=fresh,
@@ -456,6 +469,7 @@ class JWTManager(object):
             csrf=config.csrf_protect,
             identity_claim_key=config.identity_claim_key,
             user_claims_key=config.user_claims_key,
-            json_encoder=config.json_encoder
+            json_encoder=config.json_encoder,
+            kid=kid,
         )
         return access_token

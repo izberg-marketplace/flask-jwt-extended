@@ -127,7 +127,10 @@ def decode_jwt(encoded_token, secret, algorithm, identity_claim_key,
     :return: Dictionary containing contents of the JWT
     """
     # This call verifies the ext, iat, nbf, and aud claims
-    data = jwt.decode(encoded_token, secret, algorithms=[algorithm], audience=audience)
+    data = jwt.decode(
+        encoded_token, secret, algorithms=[algorithm], audience=audience,
+        options={"verify_aud": bool(audience)}
+    )
 
     # Make sure that any custom claims we expect in the token are present
     if 'jti' not in data:

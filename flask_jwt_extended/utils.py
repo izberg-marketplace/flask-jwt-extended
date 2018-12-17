@@ -197,7 +197,11 @@ def verify_token_not_blacklisted(decoded_token, request_type):
 
 def verify_token_claims(jwt_data):
     jwt_manager = _get_jwt_manager()
-    user_claims = jwt_data[config.user_claims_key]
+    if config.user_claims_key:
+        user_claims = jwt_data[config.user_claims_key]
+    else:
+        # user claims are at root
+        user_claims = jwt_data
     if not jwt_manager._claims_verification_callback(user_claims):
         raise UserClaimsVerificationError('User claims verification failed')
 
